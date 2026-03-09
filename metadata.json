@@ -1,0 +1,5 @@
+{
+  "name": "Multi-Stream Live",
+  "description": "Upload videos and stream them to multiple Facebook Live destinations simultaneously using stream keys.",
+  "requestFramePermissions": []
+}
