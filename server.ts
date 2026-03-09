@@ -50,6 +50,23 @@ async function startServer() {
     next();
   });
 
+  // Basic CORS to allow frontend (e.g. Vercel) to call this API
+  const allowedOrigin = process.env.CORS_ORIGIN || "*";
+  app.use((req, res, next) => {
+    res.header("Access-Control-Allow-Origin", allowedOrigin);
+    res.header("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+    res.header(
+      "Access-Control-Allow-Headers",
+      "Content-Type, Authorization, X-Requested-With",
+    );
+
+    if (req.method === "OPTIONS") {
+      return res.sendStatus(200);
+    }
+
+    next();
+  });
+
   // Increase limits for large video uploads
   app.use(express.json({ limit: "500mb" }));
   app.use(express.urlencoded({ limit: "500mb", extended: true }));
