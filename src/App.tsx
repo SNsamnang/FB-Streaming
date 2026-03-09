@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
+const API_BASE = import.meta.env.VITE_API_URL ?? "";
+
 type ServerFile = {
   filename: string;
   path: string;
@@ -154,7 +156,7 @@ export default function App() {
 
   const testConnection = async () => {
     try {
-      const res = await fetch("/api/ping");
+      const res = await fetch(`${API_BASE}/api/ping`);
       const data = await res.json();
       setConnectionStatus(`Connected: ${data.timestamp}`);
       setTimeout(() => setConnectionStatus(null), 3000);
@@ -287,7 +289,7 @@ export default function App() {
         formData.append("uploadId", uploadId);
         formData.append("chunkIndex", i.toString());
 
-        const response = await fetch("/api/upload/chunk", {
+        const response = await fetch(`${API_BASE}/api/upload/chunk`, {
           method: "POST",
           body: formData,
         });
@@ -308,7 +310,7 @@ export default function App() {
       }
 
       // Finalize upload
-      const finalizeRes = await fetch("/api/upload/finalize", {
+      const finalizeRes = await fetch(`${API_BASE}/api/upload/finalize`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -402,7 +404,7 @@ export default function App() {
     });
 
     try {
-      const response = await fetch("/api/stream/start", {
+      const response = await fetch(`${API_BASE}/api/stream/start`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -441,7 +443,7 @@ export default function App() {
     if (!session?.streamId) return;
 
     try {
-      const response = await fetch("/api/stream/stop", {
+      const response = await fetch(`${API_BASE}/api/stream/stop`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ streamId: session.streamId }),
@@ -757,7 +759,7 @@ export default function App() {
                   <div className="relative group rounded-2xl overflow-hidden bg-black border border-zinc-800 aspect-video">
                     <video
                       ref={videoRef}
-                      src={`/api/uploads/${current.serverFile.filename}`}
+                      src={`${API_BASE}/api/uploads/${current.serverFile.filename}`}
                       className="w-full h-full object-contain"
                       controls={false}
                       onTimeUpdate={handleTimeUpdate}
