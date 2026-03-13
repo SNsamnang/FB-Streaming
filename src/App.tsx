@@ -273,30 +273,58 @@ export default function App() {
       return next;
     });
 
-    const CHUNK_SIZE = 10 * 1024 * 1024; // 10MB chunks
+    // Smaller chunks are more reliable on slower/flaky networks
+    const CHUNK_SIZE = 4 * 1024 * 1024; // 4MB chunks
     const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
     const uploadId =
       Date.now().toString() + Math.random().toString(36).substring(2);
 
     try {
+      const MAX_RETRIES = 3;
+
       for (let i = 0; i < totalChunks; i++) {
         const start = i * CHUNK_SIZE;
         const end = Math.min(start + CHUNK_SIZE, file.size);
         const chunk = file.slice(start, end);
 
-        const formData = new FormData();
-        formData.append("chunk", chunk);
-        formData.append("uploadId", uploadId);
-        formData.append("chunkIndex", i.toString());
+        let attempt = 0;
+        let success = false;
+        let lastError: any = null;
 
-        const response = await fetch(`${API_BASE}/api/upload/chunk`, {
-          method: "POST",
-          body: formData,
-        });
+        while (attempt < MAX_RETRIES && !success) {
+          try {
+            const formData = new FormData();
+            formData.append("chunk", chunk);
+            formData.append("uploadId", uploadId);
+            formData.append("chunkIndex", i.toString());
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || `Failed to upload chunk ${i}`);
+            const response = await fetch(`${API_BASE}/api/upload/chunk`, {
+              method: "POST",
+              body: formData,
+            });
+
+            if (!response.ok) {
+              const errorData = await response.json().catch(() => ({}));
+              throw new Error(
+                (errorData as any).error || `Failed to upload chunk ${i}`,
+              );
+            }
+
+            success = true;
+          } catch (err) {
+            lastError = err;
+            attempt += 1;
+            if (attempt < MAX_RETRIES) {
+              // Simple backoff before retrying
+              await new Promise((resolve) =>
+                setTimeout(resolve, 1000 * attempt),
+              );
+            }
+          }
+        }
+
+        if (!success) {
+          throw lastError || new Error(`Failed to upload chunk ${i}`);
         }
 
         const percent = Math.round(((i + 1) / totalChunks) * 100);
